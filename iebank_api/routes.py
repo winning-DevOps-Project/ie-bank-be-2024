@@ -167,3 +167,20 @@ def new_account():
         "account_number": account.account_number
     })
 
+# users see their own account and transactions
+@api.route('/accounts/<int:id>', methods=['GET'])
+def get_account(id):
+    account = Account.query.get(id)
+    if not account:
+        return jsonify({"error": "Account not found"}), 404
+
+    return jsonify({
+        "id": account.id,
+        "name": account.name,
+        "account_number": account.account_number,
+        "balance": account.balance,
+        "currency": account.currency,
+        "status": account.status,
+        "created_at": account.created_at,
+        "country": account.country
+    })
