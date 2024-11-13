@@ -132,3 +132,15 @@ def delete_account(id):
     db.session.commit()
 
     return jsonify({"message": "Account deleted successfully"})
+
+# List Account Route
+@api.route('/accounts/<int:id>', methods=['LIST'])
+def list_account(id):
+    account = Account.query.get(id)
+    if not account:
+        return jsonify({"error": "Account not found"}), 404
+    
+    db.session.list(account)
+    db.session.commit()
+
+    return jsonify({"message": "Here is a list of accounts: "})
