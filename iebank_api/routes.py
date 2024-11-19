@@ -58,7 +58,7 @@ def create_account():
     db.session.commit()
     return format_account(account)
 
-@app.route('/accounts', login = ['POST'])
+@app.route('/login', methods=['POST'])
 def login():
     username = request.json.get('username')
     password = request.json.get('password')
@@ -68,6 +68,7 @@ def login():
         access_token = create_access_token(identity={"username": user.username, "is_admin": user.is_admin})
         return jsonify(access_token=access_token), 200
     return jsonify({"msg": "Invalid username and/or password"}), 401
+
 
 @app.route('/admin-only', methods=['GET'])
 @jwt_required()
@@ -102,8 +103,63 @@ def delete_account(id):
     db.session.commit()
     return format_account(account)
 
+@app.route('/users', methods=['GET'])
+@jwt_required()
+def list_users():
+    current_user = get_jwt_identity()
+    if not current_user.get("is_admin"):
+        return jsonify({"msg": "Admin access required"}), 403
 
+    users = User.query.all()
+    return jsonify([{"id": user.id, "username": user.username, "is_admin": user.is_admin} for user in users])
 
+@app.route('/users', methods=['POST'])
+@jwt_required()
+def create_user():
+    current_user = get_jwt_identity()
+    if not current_user.get("is_admin"):
+        return jsonify({"msg": "Admin access required"}), 403
+
+    username = request.json['username']
+    password = generate_password_hash(request.json['password'])
+    is_admin = request.json.get('is_admin', False)
+
+    new_user = User(username=username, password=password, is_admin=is_admin)
+    db.session.add(new_user)
+    db.session.commit()
+    return {"msg": "User created successfully"}
+
+@app.route('/users/<int:id>', methods=['PUT'])
+@jwt_required()
+def update_user(id):
+    current_user = get_jwt_identity()
+    if not current_user.get("is_admin"):
+        return jsonify({"msg": "Admin access required"}), 403
+
+    user = User.query.get(id)
+    if not user:
+        return {"msg": "User not found"}, 404
+
+    user.username = request.json.get('username', user.username)
+    user.password = generate_password_hash(request.json.get('password', user.password))
+    user.is_admin = request.json.get('is_admin', user.is_admin)
+    db.session.commit()
+    return {"msg": "User updated successfully"}
+
+@app.route('/users/<int:id>', methods=['DELETE'])
+@jwt_required()
+def delete_user(id):
+    current_user = get_jwt_identity()
+    if not current_user.get("is_admin"):
+        return jsonify({"msg": "Admin access required"}), 403
+
+    user = User.query.get(id)
+    if not user:
+        return {"msg": "User not found"}, 404
+
+    db.session.delete(user)
+    db.session.commit()
+    return {"msg": "User deleted successfully"}
 
 def format_account(account):
     return {
