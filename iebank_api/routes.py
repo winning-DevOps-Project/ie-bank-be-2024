@@ -5,7 +5,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
-db = SQLAlchemy()
+
+app = Flask(__name__)
+app.config['SQL DATABASE URL'] = sqlite:///app.db
+app.config['JWT_SECRET_KEY'] = 'input secret key'
+db = SQLAlchemy(app)
+jwt = JWTManager(app)
 
 @app.route('/')
 def hello_world():
@@ -40,7 +45,7 @@ def create_default_admin():
         )
         db.session.add(admin_user)
         db.session.commit()
-        print("Default admin account created with username 'admin' and password 'password123'")
+        print("default admin made with username = admin and password = 1234")
 
 
 @app.route('/accounts', methods=['POST'])
@@ -52,6 +57,12 @@ def create_account():
     db.session.add(account)
     db.session.commit()
     return format_account(account)
+
+@app.route('/accounts', login = ['POST'])
+def login():
+    username = request.json.get('username')
+    password = request.json.get('password')
+    user = User.query.filter_by(username=username).first()
 
 @app.route('/accounts', methods=['GET'])
 def get_accounts():
