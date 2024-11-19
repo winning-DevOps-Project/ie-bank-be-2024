@@ -1,8 +1,9 @@
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from iebank_api import db, app
 from iebank_api.models import Account
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
 db = SQLAlchemy()
 
@@ -88,3 +89,4 @@ def format_account(account):
         'status': account.status,
         'created_at': account.created_at
     }
+
