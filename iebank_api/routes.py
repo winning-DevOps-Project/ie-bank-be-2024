@@ -1,6 +1,10 @@
 from flask import Flask, request
 from iebank_api import db, app
 from iebank_api.models import Account
+from werkzeug.security import generate_password_hash
+from flask_sqlalchemy import SQLAlchemy
+
+db = SQLAlchemy()
 
 @app.route('/')
 def hello_world():
@@ -20,6 +24,22 @@ def skull():
     if db.engine.url.password:
         text = text +'<br/>Database password:' + db.engine.url.password
     return text
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password = db.Column(db.String(200), nullable=False)
+    is_admin = db.Column(db.Boolean, default=False)
+
+def create_default_admin():
+    if not User.query.filter_by(username="admin").first(): # have to check if user exist
+        admin_user = User(
+            username="admin",
+            password=generate_password_hash("1234"),  # this is the password by default
+            is_admin=True
+        )
+        db.session.add(admin_user)
+        db.session.commit()
+        print("Default admin account created with username 'admin' and password 'password123'")
 
 
 @app.route('/accounts', methods=['POST'])
