@@ -63,6 +63,19 @@ def login():
     username = request.json.get('username')
     password = request.json.get('password')
     user = User.query.filter_by(username=username).first()
+    
+    if user and check_password_hash(user.password, password):
+        access_token = create_access_token(identity={"username": user.username, "is_admin": user.is_admin})
+        return jsonify(access_token=access_token), 200
+    return jsonify({"msg": "Invalid username and/or password"}), 401
+
+@app.route('/admin-only', methods=['GET'])
+@jwt_required()
+def admin_only():
+    current_user = get_jwt_identity()
+    if not current_user.get("is_admin"):
+        return jsonify({"msg": "Admin access needed"}), 403
+    return jsonify({"msg": "Welcome, Admin!"}), 200
 
 @app.route('/accounts', methods=['GET'])
 def get_accounts():
@@ -88,6 +101,9 @@ def delete_account(id):
     db.session.delete(account)
     db.session.commit()
     return format_account(account)
+
+
+
 
 def format_account(account):
     return {
