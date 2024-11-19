@@ -49,11 +49,16 @@ def create_default_admin():
 
 
 @app.route('/accounts', methods=['POST'])
+@jwt_required()
 def create_account():
+    current_user = get_jwt_identity()
+    if not current_user.get("is_admin"):
+        return jsonify({"msg": "Admin access required"}), 403
+
     name = request.json['name']
     currency = request.json['currency']
     country = request.json['country']
-    account = Account(name, currency, country)
+    account = Account(name=name, currency=currency, country=country)
     db.session.add(account)
     db.session.commit()
     return format_account(account)
@@ -79,7 +84,12 @@ def admin_only():
     return jsonify({"msg": "Welcome, Admin!"}), 200
 
 @app.route('/accounts', methods=['GET'])
+@jwt_required()
 def get_accounts():
+    current_user = get_jwt_identity()
+    if not current_user.get("is_admin"):
+        return jsonify({"msg": "Admin access required"}), 403
+
     accounts = Account.query.all()
     return {'accounts': [format_account(account) for account in accounts]}
 
@@ -89,19 +99,35 @@ def get_account(id):
     return format_account(account)
 
 @app.route('/accounts/<int:id>', methods=['PUT'])
+@jwt_required()
 def update_account(id):
+    current_user = get_jwt_identity()
+    if not current_user.get("is_admin"):
+        return jsonify({"msg": "Admin access required"}), 403
+
     account = Account.query.get(id)
+    if not account:
+        return jsonify({"msg": "Account not found"}), 404
+
     account.name = request.json['name']
     account.country = request.json['country']
     db.session.commit()
     return format_account(account)
 
 @app.route('/accounts/<int:id>', methods=['DELETE'])
+@jwt_required()
 def delete_account(id):
+    current_user = get_jwt_identity()
+    if not current_user.get("is_admin"):
+        return jsonify({"msg": "Admin access required"}), 403
+
     account = Account.query.get(id)
+    if not account:
+        return jsonify({"msg": "Account not found"}), 404
+
     db.session.delete(account)
     db.session.commit()
-    return format_account(account)
+    return jsonify({"msg": "Account deleted successfully"})
 
 @app.route('/users', methods=['GET'])
 @jwt_required()
