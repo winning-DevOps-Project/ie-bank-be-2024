@@ -7,7 +7,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required, ge
 
 
 app = Flask(__name__)
-app.config['SQL DATABASE URL'] = sqlite:///app.db
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
 app.config['JWT_SECRET_KEY'] = 'input secret key'
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
