@@ -12,6 +12,10 @@ app.config['JWT_SECRET_KEY'] = 'input secret key'
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
 
+debug_mode = os.getenv('FLASK_DEBUG', '0') == '1'
+app.run(debug=debug_mode)
+
+
 @app.route('/')
 def hello_world():
     return 'Hello, World!'
@@ -200,10 +204,12 @@ def format_account(account):
     }
 
 if __name__ == "__main__":
+    import os
     with app.app_context():
         db.create_all()  
         create_default_admin() 
-    app.run(debug=True)
+    debug_mode = os.getenv('FLASK_DEBUG', '0') == '1'
+    app.run(debug=debug_mode)
 
 @app.route('/transfer', methods=['POST'])
 @jwt_required()
