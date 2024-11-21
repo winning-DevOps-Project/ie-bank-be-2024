@@ -1,8 +1,9 @@
 from flask import Flask
+
+import os
 from iebank_api import db
 from iebank_api.routes import api  # Import the blueprint
 from iebank_api.models import User, Account  # Ensure User and Account models are loaded
-import os
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///your_database.db'  # Update as needed
