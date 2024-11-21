@@ -144,3 +144,26 @@ def list_account(id):
     db.session.commit()
 
     return jsonify({"message": "Here is a list of accounts: "})
+
+# New Account Route with unique account number
+@api.route('/accounts/new', methods=['POST'])
+def new_account():
+    data = request.get_json()
+    name = data.get("name")
+    currency = data.get("currency")
+    country = data.get("country")
+
+    # Validate the input
+    if not name or not currency or not country:
+        return jsonify({"error": "Missing account details"}), 400
+
+    # Create a new account with unique account number
+    account = Account(name=name, currency=currency, country=country)
+    db.session.add(account)
+    db.session.commit()
+
+    return jsonify({
+        "message": "Account created successfully",
+        "account_number": account.account_number
+    })
+
