@@ -19,11 +19,17 @@ app.run(debug=debug_mode)
 @app.route('/')
 def hello_world():
     return 'Hello, World!'
+    return jsonify({"message": "User registered successfully"}), 201
 
-@app.route('/skull', methods=['GET'])
-def skull():
-    text = 'Hi! This is the BACKEND SKULL! 💀 '
-    
+# User Login Route
+@api.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get("username")
+    password = data.get("password")
+
+    # Fetch the user by username
+    user = User.query.filter_by(username=username).first()
     text = text +'<br/>Database URL:' + db.engine.url.database
     if db.engine.url.host:
         text = text +'<br/>Database host:' + db.engine.url.host
@@ -34,6 +40,7 @@ def skull():
     if db.engine.url.password:
         text = text +'<br/>Database password:' + db.engine.url.password
     return text
+  
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -65,7 +72,7 @@ def create_account():
     account = Account(name=name, currency=currency, country=country)
     db.session.add(account)
     db.session.commit()
-    return format_account(account)
+
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -95,12 +102,29 @@ def get_accounts():
         return jsonify({"msg": "Admin access required"}), 403
 
     accounts = Account.query.all()
-    return {'accounts': [format_account(account) for account in accounts]}
+    return jsonify({
+        "accounts": [
+            {
+                "id": account.id,
+                "name": account.name,
+                "account_number": account.account_number,
+                "balance": account.balance,
+                "currency": account.currency,
+                "status": account.status,
+                "created_at": account.created_at,
+                "country": account.country
+            }
+            for account in accounts
+        ]
+    })
 
-@app.route('/accounts/<int:id>', methods=['GET'])
+# Get Single Account Route
+@api.route('/accounts/<int:id>', methods=['GET'])
 def get_account(id):
     account = Account.query.get(id)
-    return format_account(account)
+    if not account:
+        return jsonify({"error": "Account not found"}), 404
+
 
 @app.route('/accounts/<int:id>', methods=['PUT'])
 @jwt_required()
@@ -116,7 +140,7 @@ def update_account(id):
     account.name = request.json['name']
     account.country = request.json['country']
     db.session.commit()
-    return format_account(account)
+
 
 @app.route('/accounts/<int:id>', methods=['DELETE'])
 @jwt_required()
@@ -203,14 +227,6 @@ def format_account(account):
         'created_at': account.created_at
     }
 
-if __name__ == "__main__":
-    import os
-    with app.app_context():
-        db.create_all()  
-        create_default_admin() 
-    debug_mode = os.getenv('FLASK_DEBUG', '0') == '1'
-    app.run(debug=debug_mode)
-
 @app.route('/transfer', methods=['POST'])
 @jwt_required()
 def transfer_money():
@@ -253,4 +269,14 @@ def transfer_money():
         "sender_account": sender_account_number,
         "recipient_account": recipient_account_number,
         "amount_transferred": transfer_amount
-    }), 200
+    }, 200)
+  
+import os
+
+if __name__ == "__main__":
+    import os
+    with app.app_context():
+        db.create_all()  
+        create_default_admin() 
+    debug_mode = os.getenv('FLASK_DEBUG', '0') == '1'
+    app.run(debug=debug_mode)
