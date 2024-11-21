@@ -22,3 +22,25 @@ class Account(db.Model):
         self.balance = 0.0
         self.status = "Active"
         self.country = country
+        
+from flask_sqlalchemy import SQLAlchemy
+
+# Initialize the SQLAlchemy object
+db = SQLAlchemy()
+
+def init_db(app):
+    """Initialize the database with the app context."""
+    db.init_app(app)
+    with app.app_context():
+        db.create_all()  # Creates tables for all defined models
+
+# Example Model (adjust fields as necessary)
+class User(db.Model):
+    __tablename__ = 'users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+
+    def __repr__(self):
+        return f'<User {self.username}>'

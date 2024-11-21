@@ -110,3 +110,45 @@ def register():
     db.session.add(new_user)
     db.session.commit()
     return jsonify({"message": "User registered successfully"}), 201
+
+from flask import Blueprint, jsonify, request
+from iebank_api import db
+from iebank_api.models import User
+
+api = Blueprint('api', __name__)
+
+@api.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    username = data.get("username")
+    password = data.get("password")
+
+    # Validate the input
+    if not username or not password:
+        return jsonify({"error": "Missing username or password"}), 400
+
+    # Check if username already exists
+    if User.query.filter_by(username=username).first():
+        return jsonify({"error": "Username already taken"}), 400
+
+    # Create a new user with hashed password
+    user = User(username=username, password=password)
+    db.session.add(user)
+    db.session.commit()
+
+    return jsonify({"message": "User registered successfully"}), 201
+
+@api.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    username = data.get("username")
+    password = data.get("password")
+
+    # Fetch the user by username
+    user = User.query.filter_by(username=username).first()
+    
+    # Verify the password
+    if user and user.verify_password(password):
+        return jsonify({"message": "Login successful"}), 200
+
+    return jsonify({"error": "Invalid username or password"}), 401

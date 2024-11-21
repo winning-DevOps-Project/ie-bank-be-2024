@@ -28,3 +28,4 @@ with app.app_context():
 CORS(app)
 
 from iebank_api import routes
+
