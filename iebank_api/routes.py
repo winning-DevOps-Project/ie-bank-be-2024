@@ -12,28 +12,13 @@ app.config['JWT_SECRET_KEY'] = 'input secret key'
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
 
-api = Blueprint('api', __name__)
+debug_mode = os.getenv('FLASK_DEBUG', '0') == '1'
+app.run(debug=debug_mode)
 
-# User Registration Route
-@api.route('/register', methods=['POST'])
-def register():
-    data = request.get_json()
-    username = data.get("username")
-    password = data.get("password")
 
-    # Validate the input
-    if not username or not password:
-        return jsonify({"error": "Missing username or password"}), 400
-
-    # Check if username already exists
-    if User.query.filter_by(username=username).first():
-        return jsonify({"error": "Username already taken"}), 400
-
-    # Create a new user with hashed password
-    user = User(username=username, password=password)
-    db.session.add(user)
-    db.session.commit()
-
+@app.route('/')
+def hello_world():
+    return 'Hello, World!'
     return jsonify({"message": "User registered successfully"}), 201
 
 # User Login Route
@@ -242,11 +227,56 @@ def format_account(account):
         'created_at': account.created_at
     }
 
+@app.route('/transfer', methods=['POST'])
+@jwt_required()
+def transfer_money():
+    current_user = get_jwt_identity()
+
+    # Retrieve transfer details
+    sender_account_number = request.json.get('sender_account_number')
+    recipient_account_number = request.json.get('recipient_account_number')
+    transfer_amount = request.json.get('amount')
+
+    # Validate transfer amount
+    if not transfer_amount or transfer_amount <= 0:
+        return jsonify({"msg": "Invalid transfer amount"}), 400
+
+    # Fetch sender and recipient accounts
+    sender_account = Account.query.filter_by(account_number=sender_account_number).first()
+    recipient_account = Account.query.filter_by(account_number=recipient_account_number).first()
+
+    # Validate sender account
+    if not sender_account:
+        return jsonify({"msg": "Sender account not found"}), 404
+
+    # Validate recipient account
+    if not recipient_account:
+        return jsonify({"msg": "Recipient account not found"}), 404
+
+    # Check sender balance
+    if sender_account.balance < transfer_amount:
+        return jsonify({"msg": "Insufficient funds in sender's account"}), 400
+
+    # Perform the transfer
+    sender_account.balance -= transfer_amount
+    recipient_account.balance += transfer_amount
+
+    # Commit the transaction
+    db.session.commit()
+
+    return jsonify({
+        "msg": "Transfer successful",
+        "sender_account": sender_account_number,
+        "recipient_account": recipient_account_number,
+        "amount_transferred": transfer_amount
+    }, 200)
+  
 import os
 
 if __name__ == "__main__":
+    import os
     with app.app_context():
         db.create_all()  
         create_default_admin() 
-    debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']
+    debug_mode = os.getenv('FLASK_DEBUG', '0') == '1'
     app.run(debug=debug_mode)
