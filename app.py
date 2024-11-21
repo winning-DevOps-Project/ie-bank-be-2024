@@ -1,22 +1,53 @@
 from flask import Flask
-
 import os
+import logging
+from opencensus.ext.azure.log_exporter import AzureLogHandler
+from opencensus.ext.azure.trace_exporter import AzureExporter
+from opencensus.trace.samplers import ProbabilitySampler
+from opencensus.ext.flask.flask_middleware import FlaskMiddleware
+
 from iebank_api import db
 from iebank_api.routes import api  # Import the blueprint
 from iebank_api.models import User, Account  # Ensure User and Account models are loaded
 
-app = Flask(__name__)
+# Initialize Flask app
+app = Flask(name)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///your_database.db'  # Update as needed
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+# Initialize database
 db.init_app(app)
 
 # Register the blueprint
 app.register_blueprint(api)
 
+# Set up Application Insights instrumentation key
+instrumentation_key = os.getenv("APPINSIGHTS_INSTRUMENTATIONKEY", "your-default-instrumentation-key")
+
+# Initialize Application Insights Middleware for tracing
+middleware = FlaskMiddleware(
+    app,
+    exporter=AzureExporter(connection_string=f'InstrumentationKey={instrumentation_key}'),
+    sampler=ProbabilitySampler(rate=1.0),
+)
+
+# Set up Azure LogHandler for logging
+logger = logging.getLogger(name)
+logger.setLevel(logging.INFO)
+logger.addHandler(AzureLogHandler(connection_string=f'InstrumentationKey={instrumentation_key}'))
+
+# Log application initialization
 with app.app_context():
     db.create_all()  # Creates tables for the User and Account models if not existing
+    logger.info("Database tables created or already exist.")
 
-if __name__ == '__main__':
+# Define a sample route with logging
+@app.route('/')
+def home():
+    logger.info("Home route accessed")
+    return "Welcome to IE Bank Backend!"
+
+if name == 'main':
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']
+    logger.info(f"Starting Flask app in debug mode: {debug_mode}")
     app.run(debug=debug_mode)
