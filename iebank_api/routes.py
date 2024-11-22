@@ -31,7 +31,7 @@ def register():
             return jsonify({"msg": "User already exists"}), 400
 
         # Create and save the user
-        user = User(username=username)
+        user = User(username=username, is_admin=is_admin)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
@@ -109,7 +109,6 @@ def create_account():
 @jwt_required()
 def transfer_money():
     logger.info("Transfer endpoint accessed")
-    current_user = get_jwt_identity()
 
     try:
         sender_account_number = request.json.get('sender_account_number')
@@ -180,3 +179,35 @@ def get_accounts():
     except Exception as e:
         logger.error(f"Error retrieving accounts: {str(e)}")
         return jsonify({"error": "An error occurred"}), 500
+    
+@api.route('/deposit', methods=['POST'])
+@jwt_required()
+def deposit():
+    logger.info("Deposit endpoint accessed")
+    current_user = get_jwt_identity()
+    # a user deposits money into their account as if they were making a deposit at an ATM
+    try:
+        account_number = request.json.get('account_number')
+        deposit_amount = request.json.get('amount')
+        if not deposit_amount or deposit_amount <= 0:
+            logger.warning(f"Invalid deposit amount: {deposit_amount}")
+            return jsonify({"msg": "Invalid deposit amount"}), 400
+
+        account = Account.query.filter_by(account_number=account_number).first()
+        if not account:
+            logger.warning(f"Account {account_number} not found")
+            return jsonify({"msg": "Account not found"}), 404
+
+        account.balance += deposit_amount
+        db.session.commit()
+
+        logger.info(f"Deposit of {deposit_amount} to account {account_number} completed successfully")
+        return jsonify({
+            "msg": "Deposit successful",
+            "account_number": account_number,
+            "amount_deposited": deposit_amount
+        }), 200
+    except Exception as e:
+        logger.error(f"Error during deposit: {str(e)}")
+        return jsonify({"error": "An error occurred"}), 500
+    
