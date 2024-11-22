@@ -1,37 +1,28 @@
 import logging
-from flask import Flask, request, jsonify
-from iebank_api import db, app
+from flask import Blueprint, request, jsonify
 from iebank_api.models import Account, User
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
 from flask_sqlalchemy import SQLAlchemy
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+
+db = SQLAlchemy(app)
+jwt = JWTManager(app)
 
 # Initialize logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
-app.config['JWT_SECRET_KEY'] = 'input secret key'
-db = SQLAlchemy(app)
-jwt = JWTManager(app)
-
-
-@app.route('/')
-def hello_world():
-    logger.info("Root endpoint accessed")
-    return 'Hello, World!'
-
+# Define the blueprint
+api = Blueprint('api', __name__)
 
 # User Login Route
-@app.route('/login', methods=['POST'])
+@api.route('/login', methods=['POST'])
 def login():
     logger.info("Login endpoint accessed")
     try:
         username = request.json.get("username")
         password = request.json.get("password")
 
-        # Fetch the user by username
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password, password):
             logger.info(f"User {username} logged in successfully")
@@ -45,7 +36,7 @@ def login():
         return jsonify({"error": "An error occurred"}), 500
 
 
-@app.route('/accounts', methods=['POST'])
+@api.route('/accounts', methods=['POST'])
 @jwt_required()
 def create_account():
     logger.info("Create account endpoint accessed")
@@ -68,28 +59,24 @@ def create_account():
         return jsonify({"error": "An error occurred"}), 500
 
 
-@app.route('/transfer', methods=['POST'])
+@api.route('/transfer', methods=['POST'])
 @jwt_required()
 def transfer_money():
     logger.info("Transfer endpoint accessed")
     current_user = get_jwt_identity()
 
     try:
-        # Retrieve transfer details
         sender_account_number = request.json.get('sender_account_number')
         recipient_account_number = request.json.get('recipient_account_number')
         transfer_amount = request.json.get('amount')
 
-        # Validate transfer amount
         if not transfer_amount or transfer_amount <= 0:
             logger.warning(f"Invalid transfer amount: {transfer_amount}")
             return jsonify({"msg": "Invalid transfer amount"}), 400
 
-        # Fetch sender and recipient accounts
         sender_account = Account.query.filter_by(account_number=sender_account_number).first()
         recipient_account = Account.query.filter_by(account_number=recipient_account_number).first()
 
-        # Validate accounts
         if not sender_account:
             logger.warning(f"Sender account {sender_account_number} not found")
             return jsonify({"msg": "Sender account not found"}), 404
@@ -97,12 +84,10 @@ def transfer_money():
             logger.warning(f"Recipient account {recipient_account_number} not found")
             return jsonify({"msg": "Recipient account not found"}), 404
 
-        # Check sender balance
         if sender_account.balance < transfer_amount:
             logger.warning(f"Insufficient funds in account {sender_account_number}")
             return jsonify({"msg": "Insufficient funds"}), 400
 
-        # Perform the transfer
         sender_account.balance -= transfer_amount
         recipient_account.balance += transfer_amount
         db.session.commit()
@@ -119,7 +104,7 @@ def transfer_money():
         return jsonify({"error": "An error occurred"}), 500
 
 
-@app.route('/accounts', methods=['GET'])
+@api.route('/accounts', methods=['GET'])
 @jwt_required()
 def get_accounts():
     logger.info("Get accounts endpoint accessed")
