@@ -9,3 +9,4 @@ pytest
 pytest-cov
 gunicorn
 azure-identity==1.19.0
+flask_jwt_extended==4.7.1

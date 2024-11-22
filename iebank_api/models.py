@@ -8,7 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import logging
 
 # Initialize logger for this module
-logger = logging.getLogger(name)
+#logger = logging.getLogger(name)
 
 # Account Model
 class Account(db.Model):
