@@ -1,12 +1,9 @@
 import logging
 from flask import Blueprint, request, jsonify
 from iebank_api.models import Account, User
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy(app)
-jwt = JWTManager(app)
+from iebank_api import db  # Import db here
+from werkzeug.security import check_password_hash
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -15,26 +12,75 @@ logging.basicConfig(level=logging.INFO)
 # Define the blueprint
 api = Blueprint('api', __name__)
 
+@api.route('/register', methods=['POST'])
+def register():
+    logger.info("Register endpoint accessed")
+    try:
+        username = request.json.get("username")
+        password = request.json.get("password")
+        is_admin = request.json.get("is_admin", False)
+
+        # Validate inputs
+        if not username or not password:
+            logger.warning("Username or password missing")
+            return jsonify({"msg": "Username or password missing"}), 400
+
+        # Check if user already exists
+        if User.query.filter_by(username=username).first():
+            logger.warning(f"User {username} already exists")
+            return jsonify({"msg": "User already exists"}), 400
+
+        # Create and save the user
+        user = User(username=username)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+
+        logger.info(f"User {username} registered successfully")
+        
+        # Generate tokens
+        access_token = create_access_token(identity={"username": user.username, "is_admin": user.is_admin})
+        refresh_token = create_refresh_token(identity={"username": user.username, "is_admin": user.is_admin})
+
+        return jsonify({
+            "msg": "User registered successfully",
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }), 201
+
+    except Exception as e:
+        logger.error(f"Error in register endpoint: {str(e)}")
+        return jsonify({"error": "An error occurred"}), 500
+
 # User Login Route
 @api.route('/login', methods=['POST'])
 def login():
     logger.info("Login endpoint accessed")
     try:
+        # Extract username and password from the request
         username = request.json.get("username")
         password = request.json.get("password")
 
+        # Fetch user from the database
         user = User.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password, password):
+
+        # Verify password using the User model's method
+        if user and user.verify_password(password):
             logger.info(f"User {username} logged in successfully")
+            # Generate JWT token
             access_token = create_access_token(identity={"username": user.username, "is_admin": user.is_admin})
-            return jsonify(access_token=access_token), 200
+            refresh_token = create_refresh_token(identity={"username": user.username, "is_admin": user.is_admin})
+            return jsonify({
+            "msg": "User logged in successfully",
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        }), 201
 
         logger.warning(f"Login failed for user {username}")
         return jsonify({"msg": "Invalid username and/or password"}), 401
     except Exception as e:
         logger.error(f"Error in login endpoint: {str(e)}")
         return jsonify({"error": "An error occurred"}), 500
-
 
 @api.route('/accounts', methods=['POST'])
 @jwt_required()
