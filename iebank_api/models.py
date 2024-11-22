@@ -21,7 +21,10 @@ class Account(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     country = db.Column(db.String(15), nullable=False, default="No Country Selected")
 
-    def repr(self):
+    # Add the foreign key to link the account to a user
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)  # Foreign key
+
+    def __repr__(self):
         return f'<Account {self.account_number}>'
 
     def init(self, name, currency, country):
@@ -33,44 +36,34 @@ class Account(db.Model):
         self.country = country
         logger.info(f"Account initialized for user: {self.name} with account number {self.account_number}")
 
-    def deposit(self, amount):
-        try:
-            if amount <= 0:
-                raise ValueError("Deposit amount must be positive.")
-            self.balance += amount
-            db.session.commit()
-            logger.info(f"Deposited {amount} {self.currency} to account {self.account_number}. New balance: {self.balance}.")
-        except Exception as e:
-            logger.error(f"Error during deposit to account {self.account_number}: {str(e)}")
-            db.session.rollback()
-            raise
-
-    def withdraw(self, amount):
-        try:
-            if amount > self.balance:
-                raise ValueError("Insufficient balance.")
-            self.balance -= amount
-            db.session.commit()
-            logger.info(f"Withdrew {amount} {self.currency} from account {self.account_number}. New balance: {self.balance}.")
-        except Exception as e:
-            logger.error(f"Error during withdrawal from account {self.account_number}: {str(e)}")
-            db.session.rollback()
-            raise
 
 # User Model for Authentication
 class User(db.Model):
-    tablename = 'users'
-    
+    __tablename__ = 'users'
+
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
+    is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    
+    # Updated relationship to match the foreign key
+    account = db.relationship('Account', backref='user', uselist=True)
 
-    def init(self, username, password):
-        self.username = username
-        self.password_hash = generate_password_hash(password)
-        logger.info(f"User created with username: {self.username}")
+    def set_password(self, password):
+        """
+        Hash and set the password for the user.
+        """
+        try:
+            self.password_hash = generate_password_hash(password)
+            logger.info(f"Password set for user: {self.username}")
+        except Exception as e:
+            logger.error(f"Error setting password for user {self.username}: {str(e)}")
+            raise
 
     def verify_password(self, password):
+        """
+        Check if the provided password matches the stored hash.
+        """
         try:
             is_valid = check_password_hash(self.password_hash, password)
             logger.info(f"Password verification for user {self.username}: {'Success' if is_valid else 'Failure'}")
@@ -79,8 +72,12 @@ class User(db.Model):
             logger.error(f"Error verifying password for user {self.username}: {str(e)}")
             raise
 
-    def repr(self):
+    def __repr__(self):
+        """
+        Return a string representation of the user.
+        """
         return f'<User {self.username}>'
+
 
 # Initialize the SQLAlchemy object
 def init_db(app):
