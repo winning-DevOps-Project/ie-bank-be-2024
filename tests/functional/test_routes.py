@@ -1,98 +1,162 @@
-from iebank_api import app
 from iebank_api.models import Account
-import pytest
 
+from iebank_api import db
 
-
-def test_get_accounts(testing_client):
+# Test registration endpoint
+def test_register(client):
     """
-    GIVEN a Flask application
-    WHEN the '/accounts' page is requested (GET)
-    THEN check the response is valid
+    Test user registration.
     """
-    response = testing_client.get('/accounts')
+    response = client.post('/api/register', json={
+        "username": "newuser",
+        "password": "newpassword",
+        "is_admin": True
+    })
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data['msg'] == "User registered successfully"
+    assert 'access_token' in data
+    assert 'refresh_token' in data
+
+
+# Test login endpoint
+def test_login(client, create_user):
+    """
+    Test user login with valid credentials.
+    """
+    response = client.post('/api/login', json={
+        "username": "testuser",
+        "password": "testpassword"
+    })
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data['msg'] == "User logged in successfully"
+    assert 'access_token' in data
+    assert 'refresh_token' in data
+
+
+def test_create_account(client, create_user):
+    """
+    Test account creation for an admin user.
+    """
+
+    login_response = client.post('/api/login', json={
+        "username": "testuser",
+        "password": "testpassword"
+    })
+    access_token = login_response.get_json()['access_token']
+
+
+    response = client.post('/api/accounts', json={
+        "name": "Savings Account",
+        "currency": "€",
+        "country": "Germany"
+    }, headers={"Authorization": f"Bearer {access_token}"})
+    
+    # Log the response for debugging
+    print(response.get_json())
+
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data['msg'] == "Account created successfully"
+
+def test_deposit_money(client, create_user, create_account):
+    """
+    Test deposit money into an account.
+    """
+    # Log in to get access token
+    login_response = client.post('/api/login', json={
+        "username": "testuser",
+        "password": "testpassword"
+    })
+    access_token = login_response.get_json()['access_token']
+    
+    # fetch the first account
+    account = Account.query.first()
+
+    response = client.post('/api/deposit', json={
+        "account_number": account.account_number,
+        "amount": 100.0
+    }, headers={"Authorization": f"Bearer {access_token}"})
+
     assert response.status_code == 200
+    data = response.get_json()
+    assert data['msg'] == "Deposit successful"
+    assert data['amount_deposited'] == 100.0
 
-def test_dummy_wrong_path():
+
+# Test transfer money endpoint
+def test_transfer_money(client, create_user, create_account):
     """
-    GIVEN a Flask application
-    WHEN the '/wrong_path' page is requested (GET)
-    THEN check the response is valid
+    Test money transfer between accounts.
     """
-    with app.test_client() as client:
-        response = client.get('/wrong_path')
-        assert response.status_code == 404
+    # Log in to get access token
+    login_response = client.post('/api/login', json={
+        "username": "testuser",
+        "password": "testpassword"
+    })
+    access_token = login_response.get_json()['access_token']
+
+    # Create recipient account
+    with client.application.app_context():
+        recipient_account = Account(
+            name="Recipient Account",
+            currency="€",
+            country="France"
+        )
+        db.session.add(recipient_account)
+        db.session.commit()
         
-def test_get_account(testing_client):
-    """
-    GIVEN a Flask application
-    WHEN the '/accounts/<int:id>' page is requested (GET)
-    THEN check the response is valid and the account is retrieved
-    """
-    _ = testing_client.post('/accounts', json={'name': 'John Doe', 'currency': '€', 'country':'Spain'})
+        sender_account = Account(
+            name="Sender Account",
+            currency="€",
+            country="Germany"
+        )
+        db.session.add(sender_account)
+        db.session.commit()
+        
+    sender_number = Account.query.filter_by(name="Sender Account").first().account_number
+        
+    client.post('api/deposit', json={
+        "account_number": sender_number,
+        "amount": 100.0
+    }, headers={"Authorization": f"Bearer {access_token}"}
+    )
     
-    account = Account.query.filter_by(name='John Doe')[0]
-    response = testing_client.get(f'/accounts/{account.id}')
-    account = Account.query.get(account.id)
-    
-    assert response.status_code == 200
-    assert response.json['country'] == account.country
+    recipient = Account.query.filter_by(name="Recipient Account").first()
+        
+    recipient_number = recipient.account_number
     
 
-def test_create_account(testing_client):
-    """
-    GIVEN a Flask application
-    WHEN the '/accounts' page is posted to (POST)
-    THEN check the response is valid
-    """
-    response = testing_client.post('/accounts', json={'name': 'John Doe', 'currency': '€', 'country':'Spain'})
-    assert response.status_code == 200
-    
-def test_delete_account(testing_client):
-    """
-    GIVEN a Flask application
-    WHEN the '/accounts/<int:id>' page is deleted (DELETE)
-    THEN check the response is valid and the account is deleted
-    """
-    _ = testing_client.post('/accounts', json={'name': 'John Doe', 'currency': '€', 'country':'Spain'})
-    
-    account = Account.query.filter_by(name='John Doe')[0]
-    response = testing_client.delete(f'/accounts/{account.id}')
-    assert response.status_code == 200
-    
-    accounts = Account.query.filter_by(name='John Doe').all()
-    assert accounts == []
-    
-def test_update_account(testing_client):
-    """
-    GIVEN a Flask application
-    WHEN the '/accounts/<int:id>' page is put (PUT)
-    THEN check the response is valid and the account is updated
-    """
-    _ = testing_client.post('/accounts', json={'name': 'John Doe', 'currency': '€', 'country':'Spain'})
-    account = Account.query.filter_by(name='John Doe')[0]
-    
-    response = testing_client.put(f'/accounts/{account.id}', json={'name': 'Daniel', 'country': 'Argentina'})
-    account = Account.query.get(account.id)
-    
-    
-    assert response.status_code == 200
-    assert account.name == 'Daniel'
-    assert account.country == 'Argentina'
-     
+    # Perform transfer
+    response = client.post('/api/transfer', json={
+        "sender_account_number": sender_number,
+        "recipient_account_number": recipient_number,
+        "amount": 100.0
+    }, headers={"Authorization": f"Bearer {access_token}"})
 
-def test_create_account_data(testing_client):
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data['msg'] == "Transfer successful"
+    assert data['amount_transferred'] == 100.0
+    assert recipient.balance == 100.0
+
+
+# Test get accounts endpoint
+def test_get_accounts(client, create_user, create_account):
     """
-    GIVEN a Flask application
-    WHEN the '/accounts' page is posted to (POST)
-    THEN check the account data is correct
+    Test retrieval of all accounts.
     """
-    _ = testing_client.post('/accounts', json={'name': 'John Doe', 'currency': '€', 'country':'Spain'})
-    account = Account.query.filter_by(name='John Doe')[0]
-    
-    assert account.name == 'John Doe'
-    assert account.currency == '€'
-    assert account.account_number != None
-    assert account.balance == 0.0
-    assert account.status == 'Active'
-    assert account.country == 'Spain'
+    # Log in to get access token
+    login_response = client.post('/api/login', json={
+        "username": "testuser",
+        "password": "testpassword"
+    })
+    access_token = login_response.get_json()['access_token']
+
+    # Retrieve accounts
+    response = client.get('/api/accounts', headers={"Authorization": f"Bearer {access_token}"})
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "accounts" in data
+    assert len(data["accounts"]) > 0
