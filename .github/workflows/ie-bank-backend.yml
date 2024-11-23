@@ -39,7 +39,7 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Test with pytest
-        run: ENV=local python -m pytest --cov=iebank_api -v
+        run: ENV=local pytest
 
       - name: Save Docker context as artifact
         uses: actions/upload-artifact@v4
