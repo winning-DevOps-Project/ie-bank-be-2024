@@ -39,7 +39,7 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
       - name: Test with pytest
-        run: python -m pytest --cov=iebank_api -v
+        run: ENV=local python -m pytest --cov=iebank_api -v
 
       - name: Save Docker context as artifact
         uses: actions/upload-artifact@v4
@@ -64,10 +64,10 @@ jobs:
 
       - name: Fetch secrets from Key Vault
         run: |
-          DEV_ACR_USERNAME=$(az keyvault secret show --vault-name devopps-kv-dev --name ACR-USERNAME --query value -o tsv)
-          DEV_ACR_PASSWORD=$(az keyvault secret show --vault-name devopps-kv-dev --name ACR-PASSWORD --query value -o tsv)
-          echo "DEV_ACR_USERNAME=${adminUsernameSecretName}" >> $GITHUB_ENV
-          echo "DEV_ACR_PASSWORD=${adminPasswordSecretName0}" >> $GITHUB_ENV
+          DEV_ACR_USERNAME=$(az keyvault secret show --vault-name devopps-kv-dev --name adminUsernameSecretName --query value -o tsv)
+          DEV_ACR_PASSWORD=$(az keyvault secret show --vault-name devopps-kv-dev --name adminPasswordSecretName0 --query value -o tsv)
+          echo "DEV_ACR_USERNAME=${DEV_ACR_USERNAME}" >> $GITHUB_ENV
+          echo "DEV_ACR_PASSWORD=${DEV_ACR_PASSWORD}" >> $GITHUB_ENV
 
       - name: Build and push Docker image to DEV ACR
         run: |
@@ -102,8 +102,8 @@ jobs:
 
       - name: Fetch secrets from Key Vault
         run: |
-          UAT_ACR_USERNAME=$(az keyvault secret show --vault-name devopps-kv-uat --name ACR-USERNAME --query value -o tsv)
-          UAT_ACR_PASSWORD=$(az keyvault secret show --vault-name devopps-kv-uat --name ACR-PASSWORD --query value -o tsv)
+          UAT_ACR_USERNAME=$(az keyvault secret show --vault-name devopps-kv-dev --name adminUsernameSecretName --query value -o tsv)
+          UAT_ACR_PASSWORD=$(az keyvault secret show --vault-name devopps-kv-dev --name adminPasswordSecretName0 --query value -o tsv)
           echo "UAT_ACR_USERNAME=${UAT_ACR_USERNAME}" >> $GITHUB_ENV
           echo "UAT_ACR_PASSWORD=${UAT_ACR_PASSWORD}" >> $GITHUB_ENV
 
