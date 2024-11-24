@@ -14,5 +14,5 @@ COPY . .
 # Expose the application port
 EXPOSE 5000
 
-# Run the Flask application
+# If successful, run the application
 CMD ["python3", "-m", "flask", "run", "--host=0.0.0.0"]

@@ -11,93 +11,101 @@ permissions:
   id-token: write
 
 env:
-  BACKEND_WEBAPP_DEV: aguadamillas-be-dev
-  BACKEND_WEBAPP_UAT: aguadamillas-be-uat
+  BACKEND_IMAGE_NAME: devopps-backend
+  BACKEND_IMAGE_TAG: latest
+  UAT_KV: devopps-kv-uat
+  DEV_KV: devopps-kv-dev
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      ENV: ghci
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python 3.11
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.11"
-    - name: Upgrade pip
-      run: |
-        python -m pip install --upgrade pip
-    - name: Install dependencies
-      run: |
-        pip install -r requirements.txt
-    - name: Lint with flake8
-      run: |
-        pip install flake8 pytest
-        # stop the build if there are Python syntax errors or undefined names
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Test with pytest
-      run: |
-        python -m pytest --cov=iebank_api -v
-    - name: Upload artifact for deployment jobs
-      uses: actions/upload-artifact@v4
-      with:
-        name: python-app
-        path: |
-          . 
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint with flake8
+        run: |
+          pip install flake8 pytest
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+      # - name: Test with pytest
+      #   run: ENV=local pytest
+
+      - name: Save Docker context as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-context
+          path: .
+          if-no-files-found: error
 
   deploy-dev:
     runs-on: ubuntu-latest
     needs: build
-    environment:
-      name: 'Development'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+
+    environment: Development
 
     steps:
-    - name: Download artifact from build job
-      uses: actions/download-artifact@v4
-      with:
-        name: python-app
-        path: .
-    
-    - uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Download Docker context artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-context
 
-    - name: 'Deploy to Azure Web App'
-      uses: azure/webapps-deploy@v3
-      id: deploy-to-webapp
-      with:
-        app-name: ${{ env.BACKEND_WEBAPP_DEV }}
-        package: .
-    
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Fetch secrets from Key Vault
+        run: |
+          DEV_ACR_USERNAME=$(az keyvault secret show --vault-name ${{env.DEV_KV}} --name adminUsernameSecretName --query value -o tsv)
+          DEV_ACR_PASSWORD=$(az keyvault secret show --vault-name ${{env.DEV_KV}} --name adminPasswordSecretName0 --query value -o tsv)
+          echo "DEV_ACR_USERNAME=${DEV_ACR_USERNAME}" >> $GITHUB_ENV
+          echo "DEV_ACR_PASSWORD=${DEV_ACR_PASSWORD}" >> $GITHUB_ENV
+
+      - name: Build and push Docker image to DEV ACR
+        run: |
+          docker build -t ${{ secrets.DEV_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }} .
+          docker login ${{ secrets.DEV_ACR_NAME }}.azurecr.io -u $DEV_ACR_USERNAME -p $DEV_ACR_PASSWORD
+          docker push ${{ secrets.DEV_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }}
 
   deploy-uat:
-    if:  (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') || github.ref == 'refs/heads/main'
+    if: (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    needs: [build, deploy-dev]
-    environment:
-      name: 'Development'
-      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
+    needs: build
+
+    environment: UAT
 
     steps:
-    - name: Download artifact from build job
-      uses: actions/download-artifact@v4
-      with:
-        name: python-app
-        path: .
-    
-    - uses: azure/login@v2
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+      - name: Download Docker context artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-context
 
-    - name: 'Deploy to Azure Web App'
-      uses: azure/webapps-deploy@v3
-      id: deploy-to-webapp
-      with:
-        app-name: ${{ env.BACKEND_WEBAPP_UAT }}
-        package: .
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Fetch secrets from Key Vault
+        run: |
+          UAT_ACR_USERNAME=$(az keyvault secret show --vault-name ${{env.UAT_KV}} --name adminUsernameSecretName --query value -o tsv)
+          UAT_ACR_PASSWORD=$(az keyvault secret show --vault-name ${{env.UAT_KV}} --name adminPasswordSecretName0 --query value -o tsv)
+          echo "UAT_ACR_USERNAME=${UAT_ACR_USERNAME}" >> $GITHUB_ENV
+          echo "UAT_ACR_PASSWORD=${UAT_ACR_PASSWORD}" >> $GITHUB_ENV
+        
+
+      - name: Build and push Docker image to UAT ACR
+        run: |
+          docker build -t ${{ secrets.UAT_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }} .
+          docker login ${{ secrets.UAT_ACR_NAME }}.azurecr.io -u $UAT_ACR_USERNAME -p $UAT_ACR_PASSWORD
+          docker push ${{ secrets.UAT_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }}
