@@ -100,6 +100,9 @@ jobs:
           UAT_ACR_PASSWORD=$(az keyvault secret show --vault-name devopps-kv-dev --name adminPasswordSecretName0 --query value -o tsv)
           echo "UAT_ACR_USERNAME=${UAT_ACR_USERNAME}" >> $GITHUB_ENV
           echo "UAT_ACR_PASSWORD=${UAT_ACR_PASSWORD}" >> $GITHUB_ENV
+          echo $UAT_ACR_USERNAME
+          echo $UAT_ACR_PASSWORD
+        
 
       - name: Build and push Docker image to UAT ACR
         run: |
