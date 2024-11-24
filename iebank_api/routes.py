@@ -211,3 +211,6 @@ def deposit():
         logger.error(f"Error during deposit: {str(e)}")
         return jsonify({"error": "An error occurred"}), 500
     
+@app.route('/')
+def index():
+    return f"API running at {BASE_URL}"

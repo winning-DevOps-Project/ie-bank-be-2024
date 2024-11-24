@@ -1,9 +1,25 @@
 import os
 import logging
+from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
 from opencensus.ext.azure.log_exporter import AzureLogHandler
 from opencensus.ext.azure.trace_exporter import AzureExporter
 from opencensus.trace.samplers import ProbabilitySampler
 from opencensus.ext.flask.flask_middleware import FlaskMiddleware
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+app = Flask(_name_)
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("SQLALCHEMY_DATABASE_URI")
+db = SQLAlchemy(app)
+
+@app.route("/")
+def index():
+    return "Database configured successfully!"
+
+BASE_URL = os.getenv("BASE_URL", "http://localhost:5000")
 
 from flask_migrate import Migrate
 

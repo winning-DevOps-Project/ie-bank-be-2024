@@ -2,6 +2,8 @@ import os
 import urllib.parse
 from azure.identity import DefaultAzureCredential
 
+BASE_URL = os.getenv("BASE_URL", "http://localhost:5000")
+
 class Config(object): 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     DEBUG = False
