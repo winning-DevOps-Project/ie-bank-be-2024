@@ -13,6 +13,8 @@ permissions:
 env:
   BACKEND_IMAGE_NAME: devopps-backend
   BACKEND_IMAGE_TAG: latest
+  UAT_KV: devopps-kv-uat
+  DEV_KV: devopps-kv-dev
 
 jobs:
   build:
@@ -66,8 +68,8 @@ jobs:
 
       - name: Fetch secrets from Key Vault
         run: |
-          DEV_ACR_USERNAME=$(az keyvault secret show --vault-name devopps-kv-dev --name adminUsernameSecretName --query value -o tsv)
-          DEV_ACR_PASSWORD=$(az keyvault secret show --vault-name devopps-kv-dev --name adminPasswordSecretName0 --query value -o tsv)
+          DEV_ACR_USERNAME=$(az keyvault secret show --vault-name ${{env.DEV_KV}} --name adminUsernameSecretName --query value -o tsv)
+          DEV_ACR_PASSWORD=$(az keyvault secret show --vault-name ${{env.UAT_KV}} --name adminPasswordSecretName0 --query value -o tsv)
           echo "DEV_ACR_USERNAME=${DEV_ACR_USERNAME}" >> $GITHUB_ENV
           echo "DEV_ACR_PASSWORD=${DEV_ACR_PASSWORD}" >> $GITHUB_ENV
 
@@ -96,12 +98,10 @@ jobs:
 
       - name: Fetch secrets from Key Vault
         run: |
-          UAT_ACR_USERNAME=$(az keyvault secret show --vault-name devopps-kv-dev --name adminUsernameSecretName --query value -o tsv)
-          UAT_ACR_PASSWORD=$(az keyvault secret show --vault-name devopps-kv-dev --name adminPasswordSecretName0 --query value -o tsv)
+          UAT_ACR_USERNAME=$(az keyvault secret show --vault-name ${{env.UAT_KV}} --name adminUsernameSecretName --query value -o tsv)
+          UAT_ACR_PASSWORD=$(az keyvault secret show --vault-name ${{env.UAT_KV}} --name adminPasswordSecretName0 --query value -o tsv)
           echo "UAT_ACR_USERNAME=${UAT_ACR_USERNAME}" >> $GITHUB_ENV
           echo "UAT_ACR_PASSWORD=${UAT_ACR_PASSWORD}" >> $GITHUB_ENV
-          echo $UAT_ACR_USERNAME
-          echo $UAT_ACR_PASSWORD
         
 
       - name: Build and push Docker image to UAT ACR
