@@ -77,6 +77,7 @@ class User(db.Model):
         Return a string representation of the user.
         """
         return f'<User {self.username}>'
+    
 
 
 # Initialize the SQLAlchemy object
