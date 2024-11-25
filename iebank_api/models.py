@@ -43,7 +43,7 @@ class User(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
+    password_hash = db.Column(db.String(256), nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
     
     # Updated relationship to match the foreign key
@@ -77,6 +77,7 @@ class User(db.Model):
         Return a string representation of the user.
         """
         return f'<User {self.username}>'
+    
 
 
 # Initialize the SQLAlchemy object

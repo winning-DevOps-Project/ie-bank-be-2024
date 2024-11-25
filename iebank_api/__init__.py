@@ -3,6 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 from flask_cors import CORS
 import os
+from config import DevelopmentConfig, UATConfig
 
 db = SQLAlchemy()
 jwt = JWTManager()
@@ -16,13 +17,15 @@ def create_app():
         app.config.from_object('config.LocalConfig')
     elif os.getenv('ENV') == 'dev':
         print("Running in development mode")
-        app.config.from_object('config.DevelopmentConfig')
+        dev_config = DevelopmentConfig()
+        app.config.from_object(dev_config)
     elif os.getenv('ENV') == 'ghci':
         print("Running in GitHub CI mode")
         app.config.from_object('config.GithubCIConfig')
     elif os.getenv('ENV') == 'uat':
         print("Running in UAT mode")
-        app.config.from_object('config.UATConfig')
+        uat_config = UATConfig()
+        app.config.from_object(uat_config)
 
     db.init_app(app)
     jwt.init_app(app)
@@ -34,4 +37,3 @@ def create_app():
 
     # Return the app instance
     return app
-

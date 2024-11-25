@@ -35,12 +35,6 @@ with app.app_context():
     db.create_all()
     logger.info("Database tables created or already exist.")
 
-# Define a sample route for testing
-@app.route('/')
-def home():
-    logger.info("Home route accessed")
-    return "Welcome to IE Bank Backend!"
-
 if __name__ == '__main__':
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']
     logger.info(f"Starting Flask app in debug mode: {debug_mode}")
