@@ -2,7 +2,7 @@ import os
 import urllib.parse
 from azure.identity import DefaultAzureCredential
 
-class Config(object):
+class Config(object): 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     DEBUG = False
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'dev-secret-key')
