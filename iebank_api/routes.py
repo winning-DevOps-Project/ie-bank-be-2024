@@ -56,7 +56,7 @@ def register():
 
     except Exception as e:
         logger.error(f"Error in register endpoint: {str(e)}")
-        return jsonify({"error": "An error occurred"}), 500
+        return jsonify({"error": f"An error occurred {str(e)}"}), 500
 
 # User Login Route
 @api.route('/login', methods=['POST'])
@@ -86,7 +86,7 @@ def login():
         return jsonify({"msg": "Invalid username and/or password"}), 401
     except Exception as e:
         logger.error(f"Error in login endpoint: {str(e)}")
-        return jsonify({"error": "An error occurred"}), 500
+        return jsonify({"error": f"An error occurred {str(e)}"}), 500
 
 @api.route('/accounts', methods=['POST'])
 @jwt_required()
