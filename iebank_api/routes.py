@@ -12,6 +12,12 @@ logging.basicConfig(level=logging.INFO)
 # Define the blueprint
 api = Blueprint('api', __name__)
 
+# Define a sample route for testing
+@api.route('/')
+def home():
+    logger.info("Home route accessed")
+    return "Welcome to IE Bank Backend!"
+
 @api.route('/register', methods=['POST'])
 def register():
     logger.info("Register endpoint accessed")
