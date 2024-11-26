@@ -27,13 +27,8 @@ logger = logging.getLogger("Hello")
 logger.setLevel(logging.INFO)
 logger.addHandler(AzureLogHandler(connection_string=f'InstrumentationKey={instrumentation_key}'))
 
-# Run database migrations
+# Set up Flask-Migrate
 migrate = Migrate(app, db)
-
-# Initialize the database
-with app.app_context():
-    db.create_all()
-    logger.info("Database tables created or already exist.")
 
 if __name__ == '__main__':
     debug_mode = os.getenv('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']
