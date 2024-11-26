@@ -77,6 +77,22 @@ class User(db.Model):
         Return a string representation of the user.
         """
         return f'<User {self.username}>'
+
+class Transaction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender = db.Column(db.String(20), nullable=False)
+    receiver = db.Column(db.String(20), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    transaction_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def __repr__(self):
+        return f'<Transaction {self.id}>'
+
+    def __init__(self, sender, receiver, amount):
+        self.sender = sender
+        self.receiver = receiver
+        self.amount = amount
+        logger.info(f"Transaction initialized from {self.sender} to {self.receiver} for {self.amount}")
     
 
 
