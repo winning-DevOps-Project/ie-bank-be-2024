@@ -25,6 +25,7 @@ def register():
         username = request.json.get("username")
         password = request.json.get("password")
         password_2 = request.json.get("password_2")
+        country = request.json.get("country")
         
         if password != password_2:
             logger.warning("Passwords do not match")
@@ -48,7 +49,7 @@ def register():
 
         logger.info(f"User {username} registered successfully")
 
-        account = Account(name=f"{username}'s Account", currency="€", country="No Country Selected")
+        account = Account(name=f"{username}'s Account", currency="€", country=country)
         account.user_id = user.id  # Link the account to the user
         db.session.add(account)
         db.session.commit()
@@ -61,7 +62,8 @@ def register():
         return jsonify({
             "msg": "User registered successfully",
             "access_token": access_token,
-            "refresh_token": refresh_token
+            "refresh_token": refresh_token,
+            "is_admin": user.is_admin
         }), 201
 
     except Exception as e:
@@ -90,7 +92,8 @@ def login():
             return jsonify({
             "msg": "User logged in successfully",
             "access_token": access_token,
-            "refresh_token": refresh_token
+            "refresh_token": refresh_token,
+            "is_admin": user.is_admin
         }), 201
 
         logger.warning(f"Login failed for user {username}")
@@ -174,9 +177,8 @@ def transfer_money():
 @jwt_required()
 def get_accounts():
     current_user = get_jwt_identity()
-    logger.info(f"{current_user.get('username')} accessed the get accounts endpoint accessed")
     if current_user.get("is_admin"):
-        logger.log(f"Admin user {current_user.get('username')} retrieved all accounts")
+        logger.info(f"Admin user {current_user.get('username')} retrieved all accounts")
         accounts = Account.query.all()
     else:
         accounts = Account.query.filter_by(user_id=current_user.get("id")).all()
@@ -206,13 +208,17 @@ def get_accounts():
 def update_account(account_number):
     logger.info("Update account endpoint accessed")
     current_user = get_jwt_identity()
+    
     current_user_account = Account.query.filter_by(user_id=current_user.get("id")).first()
-    if not current_user.get("is_admin") or not current_user.get("id") == current_user_account.user_id:
+    
+    if not current_user.get("is_admin") or (current_user_account and current_user.get("id") == current_user_account.user_id):
         logger.warning("Non-admin user or wrong user attempted to update an account")
         return jsonify({"msg": "Admin access required"}), 403
 
     try:
+        
         account = Account.query.filter_by(account_number=account_number).first()
+        
         if not account:
             logger.warning(f"Account {account_number} not found")
             return jsonify({"msg": "Account not found"}), 404

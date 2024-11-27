@@ -7,10 +7,10 @@ def test_register(client):
     """
     Test user registration.
     """
-    response = client.post('/api/register', json={
+    response = client.post('/api/register/', json={
         "username": "newuser",
         "password": "newpassword",
-        "is_admin": True
+        "password_2": "newpassword"
     })
     assert response.status_code == 201
     data = response.get_json()
@@ -24,7 +24,7 @@ def test_login(client, create_user):
     """
     Test user login with valid credentials.
     """
-    response = client.post('/api/login', json={
+    response = client.post('/api/login/', json={
         "username": "testuser",
         "password": "testpassword"
     })
@@ -40,14 +40,14 @@ def test_create_account(client, create_user):
     Test account creation for an admin user.
     """
 
-    login_response = client.post('/api/login', json={
+    login_response = client.post('/api/login/', json={
         "username": "testuser",
         "password": "testpassword"
     })
     access_token = login_response.get_json()['access_token']
 
 
-    response = client.post('/api/accounts', json={
+    response = client.post('/api/accounts/', json={
         "name": "Savings Account",
         "currency": "€",
         "country": "Germany"
@@ -65,7 +65,7 @@ def test_deposit_money(client, create_user, create_account):
     Test deposit money into an account.
     """
     # Log in to get access token
-    login_response = client.post('/api/login', json={
+    login_response = client.post('/api/login/', json={
         "username": "testuser",
         "password": "testpassword"
     })
@@ -74,7 +74,7 @@ def test_deposit_money(client, create_user, create_account):
     # fetch the first account
     account = Account.query.first()
 
-    response = client.post('/api/deposit', json={
+    response = client.post('/api/deposit/', json={
         "account_number": account.account_number,
         "amount": 100.0
     }, headers={"Authorization": f"Bearer {access_token}"})
@@ -91,7 +91,7 @@ def test_transfer_money(client, create_user, create_account):
     Test money transfer between accounts.
     """
     # Log in to get access token
-    login_response = client.post('/api/login', json={
+    login_response = client.post('/api/login/', json={
         "username": "testuser",
         "password": "testpassword"
     })
@@ -117,7 +117,7 @@ def test_transfer_money(client, create_user, create_account):
         
     sender_number = Account.query.filter_by(name="Sender Account").first().account_number
         
-    client.post('api/deposit', json={
+    client.post('api/deposit/', json={
         "account_number": sender_number,
         "amount": 100.0
     }, headers={"Authorization": f"Bearer {access_token}"}
@@ -129,7 +129,7 @@ def test_transfer_money(client, create_user, create_account):
     
 
     # Perform transfer
-    response = client.post('/api/transfer', json={
+    response = client.post('/api/transfer/', json={
         "sender_account_number": sender_number,
         "recipient_account_number": recipient_number,
         "amount": 100.0
@@ -148,14 +148,14 @@ def test_get_accounts(client, create_user, create_account):
     Test retrieval of all accounts.
     """
     # Log in to get access token
-    login_response = client.post('/api/login', json={
+    login_response = client.post('/api/login/', json={
         "username": "testuser",
         "password": "testpassword"
     })
     access_token = login_response.get_json()['access_token']
 
     # Retrieve accounts
-    response = client.get('/api/accounts', headers={"Authorization": f"Bearer {access_token}"})
+    response = client.get('/api/accounts/', headers={"Authorization": f"Bearer {access_token}"})
     assert response.status_code == 200
     data = response.get_json()
     assert "accounts" in data
