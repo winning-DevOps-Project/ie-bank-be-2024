@@ -37,3 +37,26 @@ def create_app():
 
     # Return the app instance
     return app
+
+def create_default_admin_user():
+    """
+    Creates a default admin user.
+    Credentials can be sourced from environment variables for security.
+    """
+    default_admin_username = os.getenv('DEFAULT_ADMIN_USERNAME', 'admin')
+    default_admin_email = os.getenv('DEFAULT_ADMIN_EMAIL', 'admin@example.com')
+    default_admin_password = os.getenv('DEFAULT_ADMIN_PASSWORD', 'admin123')  # Change default password!
+
+    if not default_admin_password or default_admin_password == 'admin123':
+        print("Warning: Using default admin password. Please change it immediately!")
+
+    admin_user = User(
+        username=default_admin_username,
+        email=default_admin_email,
+        is_admin=True
+    )
+    admin_user.set_password(default_admin_password)
+
+    db.session.add(admin_user)
+    db.session.commit()
+    print(f"Default admin user '{admin_user.username}' created successfully.")
