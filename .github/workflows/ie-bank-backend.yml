@@ -2,7 +2,6 @@ name: ie-bank-backend
 
 on:
   push:
-    branches-ignore: [ "main" ]  # Ignore main branch for push events
   pull_request:
     branches: [ "main" ]  # Trigger only for pull requests targeting main
   workflow_dispatch:
