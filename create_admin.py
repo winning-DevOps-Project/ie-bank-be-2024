@@ -17,8 +17,9 @@ def create_default_admin():
         
         print("Creating default admin user.")
         
-        if User.query.count() > 0:
-            print("Admin user already exists. Aborting creation.")
+        # See if the "admin" user already exists
+        if User.query.filter_by(username='admin').first():
+            print("Default admin user already exists. Admin creation aborted.")
             return
         
         # Fetch credentials from environment variables or prompt the user
