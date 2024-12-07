@@ -2,8 +2,9 @@ name: ie-bank-backend
 
 on:
   push:
+    branches-ignore: [ "main" ]  # Ignore main branch for push events
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main" ]  # Trigger only for pull requests targeting main
   workflow_dispatch:
 
 permissions:
@@ -15,6 +16,7 @@ env:
   BACKEND_IMAGE_TAG: latest
   UAT_KV: devopps-kv-uat
   DEV_KV: devopps-kv-dev
+  PROD_KV: devopps-kv-prod
 
 jobs:
   build:
@@ -40,9 +42,6 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-      # - name: Test with pytest
-      #   run: ENV=local pytest
-
       - name: Save Docker context as artifact
         uses: actions/upload-artifact@v4
         with:
@@ -53,6 +52,7 @@ jobs:
   deploy-dev:
     runs-on: ubuntu-latest
     needs: build
+    if: github.ref != 'refs/heads/main' && github.event_name == 'push'
 
     environment: Development
 
@@ -80,9 +80,9 @@ jobs:
           docker push ${{ secrets.DEV_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }}
 
   deploy-uat:
-    if: (github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main') || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs: build
+    if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
 
     environment: UAT
 
@@ -102,10 +102,39 @@ jobs:
           UAT_ACR_PASSWORD=$(az keyvault secret show --vault-name ${{env.UAT_KV}} --name adminPasswordSecretName0 --query value -o tsv)
           echo "UAT_ACR_USERNAME=${UAT_ACR_USERNAME}" >> $GITHUB_ENV
           echo "UAT_ACR_PASSWORD=${UAT_ACR_PASSWORD}" >> $GITHUB_ENV
-        
 
       - name: Build and push Docker image to UAT ACR
         run: |
           docker build -t ${{ secrets.UAT_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }} .
           docker login ${{ secrets.UAT_ACR_NAME }}.azurecr.io -u $UAT_ACR_USERNAME -p $UAT_ACR_PASSWORD
           docker push ${{ secrets.UAT_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }}
+
+  deploy-prod:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+
+    environment: Production
+
+    steps:
+      - name: Download Docker context artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-context
+
+      - uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Fetch secrets from Key Vault
+        run: |
+          PROD_ACR_USERNAME=$(az keyvault secret show --vault-name ${{env.PROD_KV}} --name adminUsernameSecretName --query value -o tsv)
+          PROD_ACR_PASSWORD=$(az keyvault secret show --vault-name ${{env.PROD_KV}} --name adminPasswordSecretName0 --query value -o tsv)
+          echo "PROD_ACR_USERNAME=${PROD_ACR_USERNAME}" >> $GITHUB_ENV
+          echo "PROD_ACR_PASSWORD=${PROD_ACR_PASSWORD}" >> $GITHUB_ENV
+
+      - name: Build and push Docker image to Production ACR
+        run: |
+          docker build -t ${{ secrets.PROD_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }} .
+          docker login ${{ secrets.PROD_ACR_NAME }}.azurecr.io -u $PROD_ACR_USERNAME -p $PROD_ACR_PASSWORD
+          docker push ${{ secrets.PROD_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }}
