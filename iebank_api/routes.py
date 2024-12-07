@@ -131,6 +131,7 @@ def transfer_money():
     logger.info("Transfer endpoint accessed")
 
     try:
+        
         sender_account_number = request.json.get('sender_account_number')
         recipient_account_number = request.json.get('recipient_account_number')
         transfer_amount = request.json.get('amount')
@@ -141,6 +142,14 @@ def transfer_money():
 
         sender_account = Account.query.filter_by(account_number=sender_account_number).first()
         recipient_account = Account.query.filter_by(account_number=recipient_account_number).first()
+        
+        # Check if the sender is the same as the user logged in
+        current_user = get_jwt_identity()
+        current_user_account = Account.query.filter_by(user_id=current_user.get("id")).first()
+        
+        if current_user.get("id") != current_user_account.user_id:
+            logger.warning("Someone other than the account owner attempted to transfer money")
+            return jsonify({"msg": "You are not authorized to make this transaction"}), 403
 
         if not sender_account:
             logger.warning(f"Sender account {sender_account_number} not found")
@@ -346,7 +355,12 @@ def get_user_transactions():
         accounts = Account.query.filter_by(user_id=user.id).all()
         account_numbers = [account.account_number for account in accounts]
 
-        transactions = Transaction.query.filter(Transaction.sender.in_(account_numbers) | Transaction.receiver.in_(account_numbers)).all()
+        # Now we order by transaction_date descending
+        transactions = Transaction.query\
+            .filter(Transaction.sender.in_(account_numbers) | Transaction.receiver.in_(account_numbers))\
+            .order_by(Transaction.transaction_date.desc())\
+            .all()
+
         logger.info(f"{len(transactions)} transactions retrieved for user {username}")
 
         return jsonify({
