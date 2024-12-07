@@ -40,6 +40,17 @@ def register():
         if User.query.filter_by(username=username).first():
             logger.warning(f"User {username} already exists")
             return jsonify({"msg": "User already exists"}), 400
+        
+        if len(password) < 8:
+            logger.warning(f"Password for user {username} is too short")
+            return jsonify({"msg": "Password must be at least 8 characters long"}), 400
+
+        has_number = [char.isdigit() for char in password]
+        has_upper = [char.isupper() for char in password]
+        
+        if not any(has_number) or not any(has_upper):
+            logger.warning(f"Password for user {username} is too weak. Must contain at least one uppercase letter and one number")
+            return jsonify({"msg": "Password must contain at least one uppercase letter and one number"}), 400
 
         # Create and save the user
         user = User(username=username)
