@@ -15,4 +15,4 @@ COPY . .
 EXPOSE 5000
 
 # Run database migrations and then start the application
-CMD ["bash", "-c", "flask db upgrade && python3 -m flask run --host=0.0.0.0"]
+CMD ["bash", "-c", "flask db upgrade && python3 create_admin.py && python3 -m flask run --host=0.0.0.0"]
