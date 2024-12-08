@@ -48,32 +48,9 @@ jobs:
           path: .
           if-no-files-found: error
 
-  postman-tests:
+  deploy-and-test-dev:
     runs-on: ubuntu-latest
     needs: build
-    env:
-      ENVIRONMENT: Dev  # Default environment
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: "16"
-
-      - name: Install Newman
-        run: npm install -g newman
-
-      - name: Run Postman Tests
-        run: |
-          newman run Postman/Devopps-collection.json -e Postman/dev-environment.json
-          newman run Postman/Devopps-collection.json -e Postman/uat-environment.json
-          newman run Postman/Devopps-collection.json -e Postman/prod-environment.json   
-
-  deploy-dev:
-    runs-on: ubuntu-latest
-    needs: [build, postman-tests]
     if: github.ref != 'refs/heads/main' && github.event_name == 'push'
 
     environment: Development
@@ -101,9 +78,21 @@ jobs:
           docker login ${{ secrets.DEV_ACR_NAME }}.azurecr.io -u $DEV_ACR_USERNAME -p $DEV_ACR_PASSWORD
           docker push ${{ secrets.DEV_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }}
 
-  deploy-uat:
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Run Postman Tests for Dev
+        run: |
+          newman run Postman/Devopps-collection.json -e Postman/dev-environment.json
+
+  deploy-and-test-uat:
     runs-on: ubuntu-latest
-    needs: [build, postman-tests]
+    needs: build
     if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
 
     environment: UAT
@@ -121,7 +110,7 @@ jobs:
       - name: Fetch secrets from Key Vault
         run: |
           UAT_ACR_USERNAME=$(az keyvault secret show --vault-name ${{env.UAT_KV}} --name adminUsernameSecretName --query value -o tsv)
-          UAT_ACR_PASSWORD=$(az keyvault secret show --vault-name ${{env.UAT_KV}} --name adminPasswordSecretName0 --query value -o tsv)
+          UAT_ACR_PASSWORD=$(az.keyvault secret show --vault-name ${{env.UAT_KV}} --name adminPasswordSecretName0 --query value -o tsv)
           echo "UAT_ACR_USERNAME=${UAT_ACR_USERNAME}" >> $GITHUB_ENV
           echo "UAT_ACR_PASSWORD=${UAT_ACR_PASSWORD}" >> $GITHUB_ENV
 
@@ -131,9 +120,21 @@ jobs:
           docker login ${{ secrets.UAT_ACR_NAME }}.azurecr.io -u $UAT_ACR_USERNAME -p $UAT_ACR_PASSWORD
           docker push ${{ secrets.UAT_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }}
 
-  deploy-prod:
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Run Postman Tests for UAT
+        run: |
+          newman run Postman/Devopps-collection.json -e Postman/uat-environment.json
+
+  deploy-and-test-prod:
     runs-on: ubuntu-latest
-    needs: [build, postman-tests]
+    needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     environment: Production
@@ -160,3 +161,15 @@ jobs:
           docker build -t ${{ secrets.PROD_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }} .
           docker login ${{ secrets.PROD_ACR_NAME }}.azurecr.io -u $PROD_ACR_USERNAME -p $PROD_ACR_PASSWORD
           docker push ${{ secrets.PROD_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }}
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Run Postman Tests for Prod
+        run: |
+          newman run Postman/Devopps-collection.json -e Postman/prod-environment.json
