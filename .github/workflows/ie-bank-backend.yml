@@ -67,9 +67,9 @@ jobs:
 
       - name: Run Postman Tests
         run: |
-          newman run postman/Devopps-collection.json -e postman/dev-environment.json
-          newman run postman/Devopps-collection.json -e postman/uat-environment.json
-          newman run postman/Devopps-collection.json -e postman/prod-environment.json   
+          newman run Postman/Devopps-collection.json -e Postman/dev-environment.json
+          newman run Postman/Devopps-collection.json -e Postman/uat-environment.json
+          newman run Postman/Devopps-collection.json -e Postman/prod-environment.json   
 
   deploy-dev:
     runs-on: ubuntu-latest
