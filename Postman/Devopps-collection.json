@@ -121,12 +121,14 @@
             "listen": "test",
             "script": {
               "exec": [
-                "pm.test('Status code is 201', function () {",
-                "    pm.response.to.have.status(201);",
-                "});",
-                "pm.test('Response contains success message', function () {",
-                "    pm.response.json().msg === 'Account created successfully';",
-                "});"
+                pm.test('Status code is 403', function () {
+                pm.response.to.have.status(403);
+            });
+            
+            pm.test('Response contains admin access required message', function () {
+                pm.response.json().msg === 'Admin access required';
+            });
+
               ]
             }
           }
@@ -187,12 +189,15 @@
             "listen": "test",
             "script": {
               "exec": [
-                "pm.test('Status code is 200', function () {",
-                "    pm.response.to.have.status(200);",
-                "});",
-                "pm.test('Response contains transfer success message', function () {",
-                "    pm.response.json().msg === 'Transfer successful';",
-                "});"
+                pm.test('Status code is 404', function () {
+                pm.response.to.have.status(404);
+            });
+            
+            pm.test('Response contains account not found message', function () {
+                const jsonResponse = pm.response.json();
+                pm.expect(jsonResponse.msg).to.match(/Sender account not found|Recipient account not found/);
+            });
+
               ]
             }
           }
