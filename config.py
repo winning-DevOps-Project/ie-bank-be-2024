@@ -41,6 +41,10 @@ class UATConfig(Config):
         
 class ProductionConfig(Config):
     DEBUG = False
+    
+    print(urllib.parse.quote(os.getenv('DBUSER', 'default_user')))
+    print(os.getenv('DBHOST', 'localhost'))
+    print(os.getenv('DBNAME', 'production_db'))
 
     def __init__(self):
         credential = DefaultAzureCredential()
@@ -50,3 +54,4 @@ class ProductionConfig(Config):
         dbhost = os.getenv('DBHOST', 'localhost')
         dbname = os.getenv('DBNAME', 'production_db')
         self.SQLALCHEMY_DATABASE_URI = f'postgresql://{dbuser}:{dbpass}@{dbhost}/{dbname}'
+
