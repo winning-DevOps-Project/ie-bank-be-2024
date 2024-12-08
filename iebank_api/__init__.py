@@ -26,6 +26,9 @@ def create_app():
         print("Running in UAT mode")
         uat_config = UATConfig()
         app.config.from_object(uat_config)
+    elif os.getenv('ENV') == 'prod':
+        print("Running in production mode")
+        app.config.from_object('config.ProductionConfig')
 
     db.init_app(app)
     jwt.init_app(app)
