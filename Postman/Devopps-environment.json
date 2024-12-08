@@ -1,0 +1,16 @@
+{
+    "id": "devopps-environment",
+    "name": "Devopps Environment",
+    "values": [
+        {
+            "key": "base_url",
+            "value": "https://Devopps-be-dev.azurewebsites.net/api",
+            "enabled": true
+        },
+        {
+            "key": "admin_id",
+            "value": "1",
+            "enabled": true
+        }
+    ]
+}
