@@ -41,12 +41,12 @@ class UATConfig(Config):
         
 class ProductionConfig(Config):
     DEBUG = False
-    credential = DefaultAzureCredential()
-    dbuser = urllib.parse.quote(os.getenv('DBUSER', 'default_user'))
-    dbpass = credential.get_token(
-        'https://ossrdbms-aad.database.windows.net').token
-    dbhost = os.getenv('DBHOST', 'localhost')
-    dbname = os.getenv('DBNAME', 'production_db')
-    SQLALCHEMY_DATABASE_URI = f'postgresql://{dbuser}:{dbpass}@{dbhost}/{dbname}'
-    print(SQLALCHEMY_DATABASE_URI)
+    def __init__(self):
+        credential = DefaultAzureCredential()
+        dbuser = urllib.parse.quote(os.getenv('DBUSER', 'default_user'))
+        dbpass = credential.get_token(
+            'https://ossrdbms-aad.database.windows.net').token
+        dbhost = os.getenv('DBHOST', 'localhost')
+        dbname = os.getenv('DBNAME', 'production_db')
+        self.SQLALCHEMY_DATABASE_URI = f'postgresql://{dbuser}:{dbpass}@{dbhost}/{dbname}'
 
