@@ -48,28 +48,28 @@ jobs:
           path: .
           if-no-files-found: error
 
-postman-tests:
-  runs-on: ubuntu-latest
-  needs: pytests
-  env:
-    ENVIROMENT: Dev  # Default environment
-  steps:
-  - name: Checkout code
-    uses: actions/checkout@v4
+  postman-tests:
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      ENVIRONMENT: Dev  # Default environment
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-  - name: Install Node.js
-    uses: actions/setup-node@v3
-    with:
-      node-version: "16"
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
 
-  - name: Install Newman
-    run: npm install -g newman
+      - name: Install Newman
+        run: npm install -g newman
 
-  - name: Run Postman Tests
-    run: |
-        newman run ./postman/Devopps-collection.json -e ./postman/dev-environment.json
-        newman run ./postman/Devopps-collection.json -e ./postman/uat-environment.json
-        newman run ./postman/Devopps-collection.json -e ./postman/prod-environment.json   
+      - name: Run Postman Tests
+        run: |
+          newman run ./postman/Devopps-collection.json -e ./postman/dev-environment.json
+          newman run ./postman/Devopps-collection.json -e ./postman/uat-environment.json
+          newman run ./postman/Devopps-collection.json -e ./postman/prod-environment.json   
 
   deploy-dev:
     runs-on: ubuntu-latest
