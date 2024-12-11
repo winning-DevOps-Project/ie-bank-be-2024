@@ -21,7 +21,7 @@
               "    pm.response.to.have.status(200);",
               "});",
               "pm.test('Response contains Welcome message', function () {",
-              "    pm.response.text().includes('Welcome to IE Bank Backend!');",
+              "    pm.expect(pm.response.text()).to.include('Welcome to IE Bank Backend!');",
               "});"
             ]
           }
@@ -54,7 +54,7 @@
               "    pm.response.to.have.status(201);",
               "});",
               "pm.test('Response contains access token', function () {",
-              "    pm.response.json().hasOwnProperty('access_token');",
+              "    pm.expect(pm.response.json()).to.have.property('access_token');",
               "});",
               "pm.environment.set('access_token', pm.response.json().access_token);"
             ]
@@ -88,7 +88,7 @@
               "    pm.response.to.have.status(201);",
               "});",
               "pm.test('Response contains refresh token', function () {",
-              "    pm.response.json().hasOwnProperty('refresh_token');",
+              "    pm.expect(pm.response.json()).to.have.property('refresh_token');",
               "});",
               "pm.environment.set('access_token', pm.response.json().access_token);"
             ]
