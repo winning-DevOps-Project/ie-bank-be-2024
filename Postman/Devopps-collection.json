@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "Simplified IE Bank API Tests",
-    "description": "Simplified Postman tests for the IE Bank API endpoints.",
+    "name": "IE Bank API Tests (Simplified)",
+    "description": "Minimal Postman tests for IE Bank API endpoints.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -47,14 +47,10 @@
           "listen": "test",
           "script": {
             "exec": [
-              "if (pm.response.code === 201) {",
+              "pm.test('User registered successfully', function () {",
+              "    pm.response.to.have.status(201);",
               "    pm.environment.set('username', 'test_user_{{$timestamp}}');",
-              "    pm.test('User registered successfully', function () {",
-              "        pm.response.to.have.status(201);",
-              "    });",
-              "} else {",
-              "    throw new Error('Failed to register user');",
-              "}"
+              "});"
             ]
           }
         }
@@ -88,6 +84,7 @@
               "        pm.response.to.have.status(201);",
               "    });",
               "} else {",
+              "    console.error('Login failed:', pm.response.json());",
               "    throw new Error('Login failed');",
               "}"
             ]
@@ -127,6 +124,7 @@
               "        pm.response.to.have.status(201);",
               "    });",
               "} else {",
+              "    console.error('Create account failed:', pm.response.json());",
               "    throw new Error('Failed to create account');",
               "}"
             ]
@@ -165,6 +163,7 @@
               "        pm.response.to.have.status(200);",
               "    });",
               "} else {",
+              "    console.error('Deposit failed:', pm.response.json());",
               "    throw new Error('Failed to deposit money');",
               "}"
             ]
@@ -196,6 +195,7 @@
               "        pm.expect(pm.response.json().transactions).to.be.an('array');",
               "    });",
               "} else {",
+              "    console.error('Fetch transactions failed:', pm.response.json());",
               "    throw new Error('Failed to fetch transactions');",
               "}"
             ]
