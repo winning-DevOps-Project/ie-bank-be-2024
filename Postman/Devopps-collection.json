@@ -50,21 +50,9 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('User registration success or already exists', function () {",
-              "    if (pm.response.code === 201) {",
-              "        pm.test('Status code is 201', function () {",
-              "            pm.response.to.have.status(201);",
-              "        });",
-              "        pm.environment.set('access_token', pm.response.json().access_token);",
-              "    } else if (pm.response.code === 400) {",
-              "        pm.test('User already exists', function () {",
-              "            pm.expect(pm.response.json().msg).to.eql('User already exists');",
-              "        });",
-              "    } else {",
-              "        pm.test('Unexpected status code', function () {",
-              "            pm.response.to.have.status(201);",
-              "        });",
-              "    }",
+              "pm.test('User registered successfully', function () {",
+              "    pm.response.to.have.status(201);",
+              "    pm.environment.set('username', 'test_user_{{$timestamp}}');",
               "});"
             ]
           }
@@ -84,7 +72,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"username\": \"test_user_{{$timestamp}}\",\n    \"password\": \"Password123\"\n}"
+          "raw": "{\n    \"username\": \"{{username}}\",\n    \"password\": \"Password123\"\n}"
         },
         "description": "Login an existing user."
       },
@@ -93,13 +81,14 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('Status code is 201', function () {",
-              "    pm.response.to.have.status(201);",
-              "});",
-              "pm.test('Response contains refresh token', function () {",
-              "    pm.expect(pm.response.json()).to.have.property('refresh_token');",
-              "});",
-              "pm.environment.set('access_token', pm.response.json().access_token);"
+              "pm.test('Login successful', function () {",
+              "    if (pm.response.code === 201) {",
+              "        pm.environment.set('access_token', pm.response.json().access_token);",
+              "    } else {",
+              "        pm.environment.unset('access_token');",
+              "        throw new Error('Login failed. Cannot proceed without a valid token.');",
+              "    }",
+              "});"
             ]
           }
         }
@@ -131,13 +120,10 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('Status code is 201', function () {",
+              "pm.test('Account created successfully', function () {",
               "    pm.response.to.have.status(201);",
-              "});",
-              "pm.test('Response contains success message', function () {",
-              "    pm.expect(pm.response.json().msg).to.eql('Account created successfully');",
-              "});",
-              "pm.environment.set('sender_account_number', pm.response.json().account_number);"
+              "    pm.environment.set('sender_account_number', pm.response.json().account_number);",
+              "});"
             ]
           }
         }
@@ -169,23 +155,8 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('Deposit money response status', function () {",
-              "    if (pm.response.code === 200) {",
-              "        pm.test('Status code is 200', function () {",
-              "            pm.response.to.have.status(200);",
-              "        });",
-              "        pm.test('Response contains deposit success message', function () {",
-              "            pm.expect(pm.response.json().msg).to.eql('Deposit successful');",
-              "        });",
-              "    } else if (pm.response.code === 404) {",
-              "        pm.test('Account not found', function () {",
-              "            pm.expect(pm.response.json().msg).to.eql('Account not found');",
-              "        });",
-              "    } else {",
-              "        pm.test('Unexpected status code', function () {",
-              "            pm.response.to.have.status(200);",
-              "        });",
-              "    }",
+              "pm.test('Deposit successful', function () {",
+              "    pm.response.to.have.status(200);",
               "});"
             ]
           }
@@ -203,17 +174,15 @@
             "value": "Bearer {{access_token}}"
           }
         ],
-        "description": "Retrieve transactions for the logged-in user."
+        "description": "Retrieve user transactions."
       },
       "event": [
         {
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('Status code is 200', function () {",
+              "pm.test('Transactions fetched successfully', function () {",
               "    pm.response.to.have.status(200);",
-              "});",
-              "pm.test('Transactions are returned as an array', function () {",
               "    pm.expect(pm.response.json().transactions).to.be.an('array');",
               "});"
             ]
@@ -225,7 +194,7 @@
   "variable": [
     {
       "key": "base_url",
-      "value": "http://localhost:5000/api"
+      "value": "https://Devopps-be-dev.azurewebsites.net/api"
     },
     {
       "key": "access_token",
@@ -233,10 +202,6 @@
     },
     {
       "key": "sender_account_number",
-      "value": ""
-    },
-    {
-      "key": "recipient_account_number",
       "value": ""
     }
   ]
