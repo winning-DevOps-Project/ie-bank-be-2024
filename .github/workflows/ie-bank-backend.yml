@@ -42,7 +42,7 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       
       - name: Run pytest
-        run: python -m pytest
+        run: ENV=ghci python -m pytest
 
       - name: Save Docker context as artifact
         uses: actions/upload-artifact@v4

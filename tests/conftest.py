@@ -36,6 +36,7 @@ def create_user(app):
         user.set_password('testpassword')
         db.session.add(user)
         db.session.commit()
+    return user
 
 @pytest.fixture
 def create_account(app, create_user):

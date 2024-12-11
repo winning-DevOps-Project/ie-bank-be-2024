@@ -1,4 +1,4 @@
-from iebank_api.models import Account
+from iebank_api.models import Account, User
 
 from iebank_api import db
 
@@ -9,14 +9,25 @@ def test_register(client):
     """
     response = client.post('/api/register/', json={
         "username": "newuser",
-        "password": "newpassword",
-        "password_2": "newpassword"
+        "password": "Password123",
+        "password_2": "Password123"
     })
     assert response.status_code == 201
     data = response.get_json()
     assert data['msg'] == "User registered successfully"
     assert 'access_token' in data
     assert 'refresh_token' in data
+    
+def test_wrong_register(client):
+    """
+    Test user registration.
+    """
+    response = client.post('/api/register/', json={
+        "username": "newuser",
+        "password": "password",
+        "password_2": "password"
+    })
+    assert response.status_code == 400
 
 
 # Test login endpoint
@@ -86,7 +97,7 @@ def test_deposit_money(client, create_user, create_account):
 
 
 # Test transfer money endpoint
-def test_transfer_money(client, create_user, create_account):
+def test_transfer_money(client, create_user):
     """
     Test money transfer between accounts.
     """
@@ -96,22 +107,29 @@ def test_transfer_money(client, create_user, create_account):
         "password": "testpassword"
     })
     access_token = login_response.get_json()['access_token']
+    
+    user = User.query.filter_by(username="testuser").first()
 
     # Create recipient account
     with client.application.app_context():
+        
+        
+        
         recipient_account = Account(
             name="Recipient Account",
             currency="€",
             country="France"
         )
+        recipient_account.user_id = user.id
         db.session.add(recipient_account)
         db.session.commit()
         
         sender_account = Account(
             name="Sender Account",
             currency="€",
-            country="Germany"
+            country="Germany",
         )
+        sender_account.user_id = user.id
         db.session.add(sender_account)
         db.session.commit()
         
