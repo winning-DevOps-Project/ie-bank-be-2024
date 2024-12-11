@@ -40,6 +40,9 @@ jobs:
           pip install flake8 pytest
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      
+      - name: Run pytest
+        run: ENV=ghci python -m pytest
 
       - name: Save Docker context as artifact
         uses: actions/upload-artifact@v4
@@ -50,7 +53,7 @@ jobs:
 
   deploy-dev:
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build]
     if: github.ref != 'refs/heads/main' && github.event_name == 'push'
 
     environment: Development
@@ -80,7 +83,7 @@ jobs:
 
   deploy-uat:
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build]
     if: github.event_name == 'pull_request' && github.event.pull_request.base.ref == 'main'
 
     environment: UAT
@@ -107,10 +110,29 @@ jobs:
           docker build -t ${{ secrets.UAT_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }} .
           docker login ${{ secrets.UAT_ACR_NAME }}.azurecr.io -u $UAT_ACR_USERNAME -p $UAT_ACR_PASSWORD
           docker push ${{ secrets.UAT_ACR_NAME }}.azurecr.io/${{ env.BACKEND_IMAGE_NAME }}:${{ env.BACKEND_IMAGE_TAG }}
+      
+  postman-tests:
+    runs-on: ubuntu-latest
+    needs: [deploy-uat]
+    environment: UAT
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Run Postman Tests
+        run: newman run Postman/Devopps-collection.json -e Postman/uat-environment.json
 
   deploy-prod:
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     environment: Production

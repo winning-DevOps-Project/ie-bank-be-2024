@@ -1,0 +1,12 @@
+{
+    "id": "prod-environment",
+    "name": "Production Environment",
+    "values": [
+        {
+            "key": "base_url",
+            "value": "https://Devopps-be-dev.azurewebsites.net/api",
+            "enabled": true
+        }
+    ]
+}
+
