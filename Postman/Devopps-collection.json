@@ -1,213 +1,223 @@
 {
-    "info": {
-      "name": "IE Bank API Tests",
-      "description": "Postman tests for the IE Bank API endpoints.",
-      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  "info": {
+    "name": "IE Bank API Tests",
+    "description": "Postman tests for the IE Bank API endpoints.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Home",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/",
+        "description": "Check if the backend is running."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response contains Welcome message', function () {",
+              "    pm.response.text().includes('Welcome to IE Bank Backend!');",
+              "});"
+            ]
+          }
+        }
+      ]
     },
-    "item": [
-      {
-        "name": "Home",
-        "request": {
-          "method": "GET",
-          "url": "{{base_url}}/",
-          "description": "Check if the backend is running."
-        },
-        "event": [
+    {
+      "name": "Register User",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/register/",
+        "header": [
           {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "pm.test('Status code is 200', function () {",
-                "    pm.response.to.have.status(200);",
-                "});",
-                "pm.test('Response contains Welcome message', function () {",
-                "    pm.response.text().includes('Welcome to IE Bank Backend!');",
-                "});"
-              ]
-            }
+            "key": "Content-Type",
+            "value": "application/json"
           }
-        ]
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"username\": \"test_user\",\n    \"password\": \"Password123\",\n    \"password_2\": \"Password123\",\n    \"country\": \"US\"\n}"
+        },
+        "description": "Register a new user."
       },
-      {
-        "name": "Register User",
-        "request": {
-          "method": "POST",
-          "url": "{{base_url}}/register/",
-          "header": [
-            {
-              "key": "Content-Type",
-              "value": "application/json"
-            }
-          ],
-          "body": {
-            "mode": "raw",
-            "raw": "{\n    \"username\": \"test_user\",\n    \"password\": \"Password123\",\n    \"password_2\": \"Password123\",\n    \"country\": \"US\"\n}"
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "pm.test('Response contains access token', function () {",
+              "    pm.response.json().hasOwnProperty('access_token');",
+              "});",
+              "pm.environment.set('access_token', pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login User",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/login/",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"username\": \"test_user\",\n    \"password\": \"Password123\"\n}"
+        },
+        "description": "Login an existing user."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "pm.test('Response contains refresh token', function () {",
+              "    pm.response.json().hasOwnProperty('refresh_token');",
+              "});",
+              "pm.environment.set('access_token', pm.response.json().access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create Account",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/accounts/",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
           },
-          "description": "Register a new user."
-        },
-        "event": [
           {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "pm.test('Status code is 201', function () {",
-                "    pm.response.to.have.status(201);",
-                "});",
-                "pm.test('Response contains access token', function () {",
-                "    pm.response.json().hasOwnProperty('access_token');",
-                "});",
-                "pm.environment.set('access_token', pm.response.json().access_token);"
-              ]
-            }
+            "key": "Content-Type",
+            "value": "application/json"
           }
-        ]
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"name\": \"Savings Account\",\n    \"currency\": \"USD\",\n    \"country\": \"US\"\n}"
+        },
+        "description": "Create an account for the logged-in user."
       },
-      {
-        "name": "Login User",
-        "request": {
-          "method": "POST",
-          "url": "{{base_url}}/login/",
-          "header": [
-            {
-              "key": "Content-Type",
-              "value": "application/json"
-            }
-          ],
-          "body": {
-            "mode": "raw",
-            "raw": "{\n    \"username\": \"test_user\",\n    \"password\": \"Password123\"\n}"
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 201', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "pm.test('Response contains success message', function () {",
+              "    pm.expect(pm.response.json().msg).to.eql('Account created successfully');",
+              "});",
+              "pm.environment.set('sender_account_number', pm.response.json().account_number);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get All Accounts",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/accounts/",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          }
+        ],
+        "description": "Retrieve all accounts."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Accounts list is an array', function () {",
+              "    pm.expect(pm.response.json().accounts).to.be.an('array');",
+              "    pm.environment.set('recipient_account_number', pm.response.json().accounts[0].account_number);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Transfer Money",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/transfer/",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
           },
-          "description": "Login an existing user."
-        },
-        "event": [
           {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "pm.test('Status code is 201', function () {",
-                "    pm.response.to.have.status(201);",
-                "});",
-                "pm.test('Response contains refresh token', function () {",
-                "    pm.response.json().hasOwnProperty('refresh_token');",
-                "});"
-              ]
-            }
+            "key": "Content-Type",
+            "value": "application/json"
           }
-        ]
-      },
-      {
-        "name": "Create Account",
-        "request": {
-          "method": "POST",
-          "url": "{{base_url}}/accounts/",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{access_token}}"
-            },
-            {
-              "key": "Content-Type",
-              "value": "application/json"
-            }
-          ],
-          "body": {
-            "mode": "raw",
-            "raw": "{\n    \"name\": \"Savings Account\",\n    \"currency\": \"USD\",\n    \"country\": \"US\"\n}"
-          },
-          "description": "Create an account for the logged-in user."
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"sender_account_number\": \"{{sender_account_number}}\",\n    \"recipient_account_number\": \"{{recipient_account_number}}\",\n    \"amount\": 50\n}"
         },
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "pm.test('Status code is 201', function () {",
-                "    pm.response.to.have.status(201);",
-                "});",
-                "pm.test('Response contains success message', function () {",
-                "    pm.response.json().msg === 'Account created successfully';",
-                "});"
-              ]
-            }
-          }
-        ]
+        "description": "Transfer money between accounts."
       },
-      {
-        "name": "Get All Accounts",
-        "request": {
-          "method": "GET",
-          "url": "{{base_url}}/accounts/",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{access_token}}"
-            }
-          ],
-          "description": "Retrieve all accounts."
-        },
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "pm.test('Status code is 200', function () {",
-                "    pm.response.to.have.status(200);",
-                "});",
-                "pm.test('Accounts list is an array', function () {",
-                "    pm.expect(pm.response.json().accounts).to.be.an('array');",
-                "});"
-              ]
-            }
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "pm.test('Response contains transfer success message', function () {",
+              "    pm.expect(pm.response.json().msg).to.eql('Transfer successful');",
+              "});"
+            ]
           }
-        ]
-      },
-      {
-        "name": "Transfer Money",
-        "request": {
-          "method": "POST",
-          "url": "{{base_url}}/transfer/",
-          "header": [
-            {
-              "key": "Authorization",
-              "value": "Bearer {{access_token}}"
-            },
-            {
-              "key": "Content-Type",
-              "value": "application/json"
-            }
-          ],
-          "body": {
-            "mode": "raw",
-            "raw": "{\n    \"sender_account_number\": \"123456\",\n    \"recipient_account_number\": \"654321\",\n    \"amount\": 50\n}"
-          },
-          "description": "Transfer money between accounts."
-        },
-        "event": [
-          {
-            "listen": "test",
-            "script": {
-              "exec": [
-                "pm.test('Status code is 200', function () {",
-                "    pm.response.to.have.status(200);",
-                "});",
-                "pm.test('Response contains transfer success message', function () {",
-                "    pm.response.json().msg === 'Transfer successful';",
-                "});"
-              ]
-            }
-          }
-        ]
-      }
-    ],
-    "variable": [
-      {
-        "key": "base_url",
-        "value": "http://localhost:5000/api"
-      },
-      {
-        "key": "access_token",
-        "value": ""
-      }
-    ]
-  }
-  
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000/api"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "sender_account_number",
+      "value": ""
+    },
+    {
+      "key": "recipient_account_number",
+      "value": ""
+    }
+  ]
+}
