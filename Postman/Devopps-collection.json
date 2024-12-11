@@ -91,4 +91,52 @@
           }
         }
       ]
+    },
+    {
+      "name": "User Transactions",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/user/transactions/",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          }
+        ],
+        "description": "Retrieve user transactions."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    pm.test('Transactions fetched successfully', function () {",
+              "        pm.response.to.have.status(200);",
+              "        pm.expect(pm.response.json().transactions).to.be.an('array');",
+              "    });",
+              "} else {",
+              "    console.error('Fetch transactions failed:', pm.response.json());",
+              "    throw new Error('Failed to fetch transactions');",
+              "}"
+            ]
+          }
+        }
+      ]
     }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://Devopps-be-dev.azurewebsites.net/api"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "sender_account_number",
+      "value": ""
+    }
+  ]
+}
