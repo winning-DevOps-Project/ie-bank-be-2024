@@ -97,10 +97,10 @@
       ]
     },
     {
-      "name": "Create Account",
+      "name": "Deposit Money",
       "request": {
         "method": "POST",
-        "url": "{{base_url}}/accounts/",
+        "url": "{{base_url}}/deposit/",
         "header": [
           {
             "key": "Authorization",
@@ -113,39 +113,9 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n    \"name\": \"Savings Account\",\n    \"currency\": \"USD\",\n    \"country\": \"US\"\n}"
+          "raw": "{\n    \"account_number\": \"{{sender_account_number}}\",\n    \"amount\": 100\n}"
         },
-        "description": "Create an account for the logged-in user."
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Status code is 201', function () {",
-              "    pm.response.to.have.status(201);",
-              "});",
-              "pm.test('Response contains success message', function () {",
-              "    pm.expect(pm.response.json().msg).to.eql('Account created successfully');",
-              "});",
-              "pm.environment.set('sender_account_number', pm.response.json().account_number);"
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "Get All Accounts",
-      "request": {
-        "method": "GET",
-        "url": "{{base_url}}/accounts/",
-        "header": [
-          {
-            "key": "Authorization",
-            "value": "Bearer {{access_token}}"
-          }
-        ],
-        "description": "Retrieve all accounts."
+        "description": "Deposit money into an account."
       },
       "event": [
         {
@@ -155,9 +125,8 @@
               "pm.test('Status code is 200', function () {",
               "    pm.response.to.have.status(200);",
               "});",
-              "pm.test('Accounts list is an array', function () {",
-              "    pm.expect(pm.response.json().accounts).to.be.an('array');",
-              "    pm.environment.set('recipient_account_number', pm.response.json().accounts[0].account_number);",
+              "pm.test('Response contains deposit success message', function () {",
+              "    pm.expect(pm.response.json().msg).to.eql('Deposit successful');",
               "});"
             ]
           }
@@ -165,25 +134,17 @@
       ]
     },
     {
-      "name": "Transfer Money",
+      "name": "User Transactions",
       "request": {
-        "method": "POST",
-        "url": "{{base_url}}/transfer/",
+        "method": "GET",
+        "url": "{{base_url}}/user/transactions/",
         "header": [
           {
             "key": "Authorization",
             "value": "Bearer {{access_token}}"
-          },
-          {
-            "key": "Content-Type",
-            "value": "application/json"
           }
         ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n    \"sender_account_number\": \"{{sender_account_number}}\",\n    \"recipient_account_number\": \"{{recipient_account_number}}\",\n    \"amount\": 50\n}"
-        },
-        "description": "Transfer money between accounts."
+        "description": "Retrieve transactions for the logged-in user."
       },
       "event": [
         {
@@ -193,8 +154,8 @@
               "pm.test('Status code is 200', function () {",
               "    pm.response.to.have.status(200);",
               "});",
-              "pm.test('Response contains transfer success message', function () {",
-              "    pm.expect(pm.response.json().msg).to.eql('Transfer successful');",
+              "pm.test('Transactions are returned as an array', function () {",
+              "    pm.expect(pm.response.json().transactions).to.be.an('array');",
               "});"
             ]
           }
